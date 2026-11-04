@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apply for a Visa – VisaRoute</title><meta name="description" content="Fill in your details and pay securely.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head>
+<body data-page="apply"><div id="hdr"></div>
+<div class="ph"><div class="wrap"><div class="crumb"><a href="index.html">Home</a> / Apply</div><h1>Apply for your visa</h1><p>Fill in your details and choose how to pay. You are not charged until you confirm.</p></div></div>
+<main><section><div class="wrap"><div class="two">
+<form class="box" id="appForm"><div class="form">
+<div><label for="a-dest">Destination</label><select id="a-dest"></select></div>
+<div><label for="a-type">Visa type</label><select id="a-type"></select></div>
+<div><label for="a-name">Full name (as on passport)</label><input id="a-name" required autocomplete="name"></div>
+<div><label for="a-email">Email</label><input id="a-email" type="email" required autocomplete="email"></div>
+<div><label for="a-phone">Phone / WhatsApp</label><input id="a-phone" type="tel" required autocomplete="tel"></div>
+<div><label for="a-pass">Passport number</label><input id="a-pass" required></div>
+<div><label for="a-date">Planned travel date</label><input id="a-date" type="date" required></div>
+<div><label for="a-trav">Travellers</label><select id="a-trav"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div class="full"><label for="a-files">Upload passport &amp; photo</label><input id="a-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png"></div>
+<div class="full"><label>Payment method</label><div class="pay">
+<label><input type="radio" name="pm" value="paypal" checked> PayPal</label><label><input type="radio" name="pm" value="card"> Credit / debit card</label>
+<label><input type="radio" name="pm" value="bank"> Bank transfer</label><label><input type="radio" name="pm" value="wallet"> JazzCash / Easypaisa</label></div></div></div>
+<p class="note chk"><label style="display:flex;gap:8px;font-weight:400;color:inherit;margin:14px 0"><input type="checkbox" required> I agree to the Terms and Refund Policy.</label></p>
+<button class="btn teal" type="submit" style="width:100%">Pay and submit application</button></form>
+<aside class="box sum" aria-live="polite"><h3 style="margin-bottom:8px">Order summary</h3><div id="sumFlag" style="font-size:2rem"></div>
+<div class="row"><span>Destination</span><b id="s-dest"></b></div><div class="row"><span>Visa type</span><b id="s-type"></b></div><div class="row"><span>Processing</span><b id="s-time"></b></div>
+<div class="row"><span>Government fee</span><span id="s-gov"></span></div><div class="row"><span>Service fee</span><span id="s-svc"></span></div>
+<div class="row total"><span>Total</span><span id="s-total"></span></div><p class="note">Secure checkout. Documents are encrypted and deleted after processing.</p></aside>
+</div></div></section></main>
+<div id="ftr"></div>
+<script src="app.js"></script></body></html>
