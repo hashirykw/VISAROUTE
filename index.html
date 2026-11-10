@@ -1,42 +1,129 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VisaRoute – Visas & World Tours</title><meta name="description" content="Visa services for 100+ countries and curated holiday tours worldwide.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css"></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VisaRoute – Visas, Tours &amp; Umrah Worldwide</title>
+<meta name="description" content="Visa services for 100+ countries, curated holiday tours, world tours and Umrah packages. Expert document checks and human support on WhatsApp.">
+<meta name="theme-color" content="#0b1620">
+<link rel="preload" href="fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" as="image" href="images/hero.webp" fetchpriority="high">
+<link rel="icon" href="images/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"></head>
 <body data-page="home"><div id="hdr"></div>
 <main>
-<div class="hero" data-src="images/hero.jpg" data-ov="1"><div class="wrap">
-<h1>See the world. We’ll take care of the paperwork.</h1>
-<p>Visas for 100+ countries and handpicked holidays from Dubai to the Maldives to a full world tour. One team, from first document to last day of your trip.</p>
-<div class="btns"><a class="btn" href="apply.html">Apply for a visa</a><a class="btn ghost" href="tours.html">Explore tours</a></div>
-<form class="finder" id="finder"><div><label for="f-dest">Visa for</label><select id="f-dest"></select></div>
-<div><label for="f-nat">Passport country</label><select id="f-nat"><option>Pakistan</option><option>India</option><option>Bangladesh</option><option>United Kingdom</option><option>Other</option></select></div>
-<div><label for="f-type">Visa type</label><select id="f-type"><option>Tourist</option><option>Business</option><option>Transit</option><option>Family visit</option></select></div>
-<button class="btn" type="submit">Check price</button></form></div></div>
+<section class="hero" aria-labelledby="h-title">
+ <div class="hero-fallback"></div>
+ <div class="hero-media" id="heroMedia"><img src="images/hero.webp" alt="" fetchpriority="high" onerror="this.remove()"></div>
+ <svg class="routes" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <path id="rt1" class="r" d="M120 760 C 420 420, 820 380, 1180 250"/>
+  <path class="r r2" d="M60 520 C 380 300, 900 180, 1380 320"/>
+  <path class="r" d="M700 860 C 860 600, 1120 520, 1400 560"/>
+  <circle cx="120" cy="760" r="4"/><circle class="pulse" cx="120" cy="760" r="6"/>
+  <circle cx="1180" cy="250" r="4"/><circle class="pulse" cx="1180" cy="250" r="6" style="animation-delay:1.5s"/>
+  <circle cx="1380" cy="320" r="3"/><circle cx="1400" cy="560" r="3"/>
+  <g fill="#f3d58a"><path d="M0-9l3 7 7 2-7 2-3 7-1-7-6-2 6-2z" transform="rotate(90)"/>
+   <animateMotion dur="14s" repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines=".45 0 .55 1"><mpath href="#rt1"/></animateMotion></g>
+ </svg>
+ <div class="wrap">
+  <div class="hero-grid">
+   <div>
+    <span class="eyebrow">Visas · Tours · Umrah · Tickets</span>
+    <h1 id="h-title">See the world. We’ll take care of the <span class="gold">paperwork.</span></h1>
+    <p class="lead">Visas for 100+ countries and handpicked holidays from Dubai to the Maldives to a full world tour. One team, from first document to last day of your trip.</p>
+    <div class="btns"><a class="btn" href="apply.html">Apply for a visa <i data-ic="arrow"></i></a><a class="btn ghost" href="tours.html">Explore tours</a></div>
+    <div class="trust"><div class="stack" id="flagStack"></div><span><b>48,000+</b> visas processed · <b>97%</b> approval rate</span></div>
+   </div>
+   <div class="pass-stack" aria-label="Featured visa">
+    <div class="pass-back"></div>
+    <div class="pass spot" id="pass">
+     <div class="pass-photo" id="passPhoto"><span class="tag" id="passTag"></span><div class="where" id="passWhere"></div></div>
+     <div class="pass-route"><div><small>From</small><b>Home</b></div><div class="ln"><i data-ic="plane"></i></div><div style="text-align:right"><small>To</small><b id="passTo"></b></div></div>
+     <div class="pass-meta"><div><span>Visa</span><b id="passK"></b></div><div><span>Processing</span><b id="passT"></b></div><div><span>From</span><b class="gold" id="passP"></b></div></div>
+    </div>
+    <div class="float-chip fc-1"><i data-ic="check"></i><div><small>Document check</small><b>Expert reviewed</b></div></div>
+    <div class="float-chip fc-2"><i data-ic="bolt" style="background:oklch(82% .135 80 / .2);color:var(--c-gold-2)"></i><div><small>e-Visas</small><b>24–72 hours</b></div></div>
+   </div>
+  </div>
+  <form class="finder" id="finder" aria-label="Check visa price">
+   <div><label for="f-dest">Visa for</label><select id="f-dest"></select></div>
+   <div><label for="f-nat">Passport country</label><select id="f-nat"><option>Pakistan</option><option>India</option><option>Bangladesh</option><option>United Kingdom</option><option>Other</option></select></div>
+   <div><label for="f-type">Visa type</label><select id="f-type"><option>Tourist</option><option>Business</option><option>Transit</option><option>Family visit</option></select></div>
+   <button class="btn" type="submit"><i data-ic="search"></i>Check price</button>
+  </form>
+ </div>
+</section>
+
 <div class="stats"><div class="wrap"><div class="stat"><b>100+</b><span>Countries covered</span></div><div class="stat"><b>48,000+</b><span>Visas processed</span></div><div class="stat"><b>97%</b><span>Approval rate</span></div><div class="stat"><b>24/7</b><span>Customer support</span></div></div></div>
-<section><div class="wrap"><h2>Popular visa destinations</h2><p class="sub">See the fee, processing time and documents for each country.</p><div class="grid" id="pop"></div>
-<p style="margin-top:26px"><a class="btn dark" href="destinations.html">All visa destinations</a></p></div></section>
-<section class="alt"><div class="wrap"><h2>Holiday tours, planned for you</h2><p class="sub">Flights, hotels, transfers and guides in one package. Every tour can be customised.</p><div class="grid" id="tpop"></div>
-<p style="margin-top:26px"><a class="btn dark" href="tours.html">View all tours</a></p></div></section>
-<section><div class="wrap"><div class="world"><h2>Around the world in 21 days</h2><p>Dubai, Istanbul, Paris, London and New York in one seamless journey, with flights and guides included.</p><a class="btn" href="tour.html?t=7">See the world tour</a></div><div class="world" style="margin-top:20px;background:linear-gradient(100deg,rgba(6,32,28,.92),rgba(6,32,28,.4)),linear-gradient(135deg,#0b3d36,#7a6a2a)"><h2>Umrah packages &amp; tickets</h2><p>Economy, Standard and Premium packages with visa, hotels, transport and guided ziyarat. Flight tickets to Jeddah and Madinah too.</p><a class="btn" href="umrah.html">Plan your Umrah</a></div></div></section>
-<section class="alt"><div class="wrap"><h2>Why travellers choose us</h2><p class="sub">The details that make a trip smooth.</p><div class="feat">
-<div><i>🔍</i><h3>Expert document check</h3><p>Every file is reviewed before it is submitted, so small errors do not turn into refusals.</p></div>
-<div><i>⚡</i><h3>Fast processing</h3><p>Many e-visas are ready in 24 to 72 hours, with live status updates.</p></div>
-<div><i>🔒</i><h3>Secure payment</h3><p>Pay by card, PayPal, bank transfer or mobile wallet. Your data stays encrypted.</p></div>
-<div><i>🧭</i><h3>Tours made for you</h3><p>Change hotels, dates or cities. We build the plan around your budget.</p></div>
-<div><i>💬</i><h3>Human support</h3><p>Real people on WhatsApp and phone, before, during and after your trip.</p></div>
-<div><i>💰</i><h3>Clear pricing</h3><p>No hidden charges. You see government and service fees before you pay.</p></div></div></div></section>
+
+<section id="explore"><div class="wrap">
+ <div class="sec-head"><div><span class="eyebrow">Destination explorer</span><h2>Where are you flying next?</h2><p class="sub">Pick a country to see the visa format, processing time and total price.</p></div><a class="btn dark" href="destinations.html">All destinations <i data-ic="arrow"></i></a></div>
+ <div class="explorer">
+  <div class="stage" id="stage"><div class="ph-a"></div><div class="ph-b"></div>
+   <div class="stage-top"><span class="tag" id="stRegion"></span><span class="tag" id="stValid"></span></div>
+   <div class="stage-info"><h3 id="stName"></h3>
+    <div class="stage-cards"><div><span>Visa format</span><b id="stK"></b></div><div><span>Processing</span><b id="stT"></b></div><div><span>Max stay</span><b id="stS"></b></div><div class="gold"><span>Total from</span><b id="stP"></b></div></div>
+    <div class="stage-cta"><a class="btn" id="stApply" href="apply.html">Apply now</a><a class="btn ghost" id="stMore" href="destinations.html">Requirements</a></div>
+   </div>
+  </div>
+  <div class="rail"><div class="rail-h">Popular visas <span>12 countries</span></div><ul id="rail" role="tablist" aria-label="Destinations"></ul></div>
+ </div>
+</div></section>
+
+<section class="alt"><div class="wrap"><div class="sec-head"><div><h2>Popular visa destinations</h2><p class="sub">See the fee, processing time and documents for each country.</p></div><a class="btn dark" href="destinations.html">All visa destinations <i data-ic="arrow"></i></a></div><div class="grid" id="pop"></div></div></section>
+
+<section><div class="wrap"><div class="sec-head"><div><h2>Holiday tours, planned for you</h2><p class="sub">Flights, hotels, transfers and guides in one package. Every tour can be customised.</p></div><a class="btn dark" href="tours.html">View all tours <i data-ic="arrow"></i></a></div><div class="grid" id="tpop"></div></div></section>
+
+<section><div class="wrap"><div class="banners">
+ <div class="world spot"><div class="img" data-src="images/world-tour.webp"></div>
+  <div class="route-pills"><span class="tag">Dubai</span><span class="tag">Istanbul</span><span class="tag">Paris</span><span class="tag">London</span><span class="tag">New York</span></div>
+  <h2>Around the world in 21 days</h2><p>Dubai, Istanbul, Paris, London and New York in one seamless journey, with flights and guides included.</p><div><a class="btn" href="tour.html?t=7">See the world tour <i data-ic="arrow"></i></a></div></div>
+ <div class="world spot"><div class="img" data-src="images/umrah-package.webp"></div>
+  <div class="glass-panel"><h2 style="font-size:clamp(1.6rem,3vw,2.2rem)">Umrah packages &amp; tickets</h2><p>Economy, Standard and Premium packages with visa, hotels, transport and guided ziyarat. Flight tickets to Jeddah and Madinah too.</p><a class="btn teal" href="umrah.html">Plan your Umrah</a></div></div>
+</div></div></section>
+
+<section class="alt"><div class="wrap"><span class="eyebrow">Why VisaRoute</span><h2>Why travellers choose us</h2><p class="sub">The details that make a trip smooth.</p><div class="feat">
+<div class="spot"><i data-ic="search"></i><h3>Expert document check</h3><p>Every file is reviewed before it is submitted, so small errors do not turn into refusals.</p></div>
+<div class="spot"><i data-ic="bolt"></i><h3>Fast processing</h3><p>Many e-visas are ready in 24 to 72 hours, with live status updates.</p></div>
+<div class="spot"><i data-ic="lock"></i><h3>Secure payment</h3><p>Pay by card, PayPal, bank transfer or mobile wallet. Your data stays encrypted.</p></div>
+<div class="spot"><i data-ic="compass"></i><h3>Tours made for you</h3><p>Change hotels, dates or cities. We build the plan around your budget.</p></div>
+<div class="spot"><i data-ic="chat"></i><h3>Human support</h3><p>Real people on WhatsApp and phone, before, during and after your trip.</p></div>
+<div class="spot"><i data-ic="tag"></i><h3>Clear pricing</h3><p>No hidden charges. You see government and service fees before you pay.</p></div></div></div></section>
+
 <section><div class="wrap"><h2>Four steps to your visa</h2><p class="sub">Everything happens online.</p><div class="steps">
-<div class="step"><h3>Choose</h3><p>Pick the country and visa type, and see the total.</p></div><div class="step"><h3>Upload</h3><p>Send your passport and photo securely.</p></div>
-<div class="step"><h3>We review</h3><p>An expert checks and submits your application.</p></div><div class="step"><h3>Travel</h3><p>Receive your visa by email or courier.</p></div></div></div></section>
+<div class="step spot"><h3>Choose</h3><p>Pick the country and visa type, and see the total.</p></div><div class="step spot"><h3>Upload</h3><p>Send your passport and photo securely.</p></div>
+<div class="step spot"><h3>We review</h3><p>An expert checks and submits your application.</p></div><div class="step spot"><h3>Travel</h3><p>Receive your visa by email or courier.</p></div></div></div></section>
+
 <section class="alt"><div class="wrap"><h2>Places our travellers love</h2><p class="sub">Tap a tile to see the destination or tour.</p><div class="mosaic" id="mos"></div></div></section>
+
 <section><div class="wrap"><h2>Travellers trust us</h2><p class="sub">Real feedback from people who booked with us.</p><div class="quotes">
-<div class="q"><div class="stars">★★★★★</div><p>My Schengen file was rejected once before. VisaRoute spotted two missing papers and I was approved in nine days.</p><b>Ayesha K.</b><br><span>Karachi → Italy</span></div>
-<div class="q"><div class="stars">★★★★★</div><p>The Turkey tour was perfectly organised. Hotels, guides and transfers were exactly as promised.</p><b>Hamza R.</b><br><span>Lahore → Turkey</span></div>
-<div class="q"><div class="stars">★★★★★</div><p>We booked our honeymoon in the Maldives. They handled every detail and replied on WhatsApp within minutes.</p><b>Sana &amp; Bilal</b><br><span>Islamabad → Maldives</span></div></div></div></section>
-<section class="alt"><div class="wrap"><h2>Travel guides</h2><p class="sub">Tips from our team to help you plan better.</p><div class="grid" id="blogp"></div></div></section>
-<section><div class="wrap"><div class="news"><div><h2 style="color:#fff">Get travel deals first</h2><p>Visa updates and tour offers, once a month. No spam.</p></div>
+<div class="q spot"><div class="stars">★★★★★</div><p>My Schengen file was rejected once before. VisaRoute spotted two missing papers and I was approved in nine days.</p><b>Ayesha K.</b><br><span>Karachi → Italy</span></div>
+<div class="q spot"><div class="stars">★★★★★</div><p>The Turkey tour was perfectly organised. Hotels, guides and transfers were exactly as promised.</p><b>Hamza R.</b><br><span>Lahore → Turkey</span></div>
+<div class="q spot"><div class="stars">★★★★★</div><p>We booked our honeymoon in the Maldives. They handled every detail and replied on WhatsApp within minutes.</p><b>Sana &amp; Bilal</b><br><span>Islamabad → Maldives</span></div></div></div></section>
+
+<section id="plan" class="alt"><div class="wrap"><div class="plan">
+ <div class="plan-copy"><span class="eyebrow">Free trip consultation</span><h2>Tell us the trip. We’ll plan the rest.</h2><p class="sub" style="margin-bottom:0">Share where you want to go and roughly when. A travel expert sends you options, prices and the visa checklist on WhatsApp.</p>
+  <ul><li><i data-ic="clock"></i>Reply within the hour, Mon–Sat 9am–9pm</li><li><i data-ic="shield"></i>No payment needed to enquire</li><li><i data-ic="doc"></i>Visa checklist included with every plan</li></ul></div>
+ <form class="plan-card" id="planForm" novalidate>
+  <div class="form">
+   <div class="full"><label>What do you need?</label><div class="seg" role="radiogroup" aria-label="Service">
+    <label><input type="radio" name="svc" value="Visa" checked><span><i data-ic="passport"></i>Visa</span></label>
+    <label><input type="radio" name="svc" value="Tour"><span><i data-ic="compass"></i>Tour</span></label>
+    <label><input type="radio" name="svc" value="Umrah"><span><i data-ic="moon"></i>Umrah</span></label>
+    <label><input type="radio" name="svc" value="Flights"><span><i data-ic="plane"></i>Flights</span></label></div></div>
+   <div><label for="p-n">Full name</label><input id="p-n" required autocomplete="name" placeholder="Your name"></div>
+   <div><label for="p-p">Phone / WhatsApp</label><input id="p-p" type="tel" required autocomplete="tel" placeholder="+92 3xx xxxxxxx"></div>
+   <div><label for="p-e">Email</label><input id="p-e" type="email" autocomplete="email" placeholder="you@email.com"></div>
+   <div><label for="p-d">Destination</label><select id="p-d"></select></div>
+   <div><label for="p-m">Travel month</label><input id="p-m" type="month"></div>
+   <div><label for="p-t">Travellers</label><div class="stepper"><button type="button" data-step="-1" aria-label="Fewer travellers">−</button><input id="p-t" type="number" min="1" max="30" value="2" inputmode="numeric"><button type="button" data-step="1" aria-label="More travellers">+</button></div></div>
+   <div class="full"><div class="range-row"><label for="p-b" style="margin:0">Budget per person</label><output id="p-bo" for="p-b">$1,500</output></div><input id="p-b" type="range" min="200" max="6000" step="100" value="1500"></div>
+   <div class="full"><label for="p-x">Anything we should know?</label><textarea id="p-x" rows="3" placeholder="Dates, cities, hotel preference, refusals in the past…"></textarea></div>
+  </div>
+  <div class="form-foot"><p class="note">By sending, you agree to be contacted about this trip.</p><button class="btn" type="submit">Send my trip plan <i data-ic="arrow"></i></button></div>
+ </form>
+</div></div></section>
+
+<section><div class="wrap"><div class="sec-head"><div><h2>Travel guides</h2><p class="sub">Tips from our team to help you plan better.</p></div><a class="btn dark" href="blog.html">All guides <i data-ic="arrow"></i></a></div><div class="grid" id="blogp"></div></div></section>
+
+<section style="padding-top:0"><div class="wrap"><div class="news"><div><h2>Get travel deals first</h2><p>Visa updates and tour offers, once a month. No spam.</p></div>
 <form id="nl"><input type="email" placeholder="Your email" aria-label="Email" required><button class="btn" type="submit">Subscribe</button></form></div></div></section>
 </main>
 <div id="ftr"></div>
