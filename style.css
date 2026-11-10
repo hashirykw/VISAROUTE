@@ -864,3 +864,7 @@ html.drag-sb{user-select:none}
 @media (prefers-reduced-motion:reduce){.rv-img{clip-path:none;opacity:1}.pt{display:none}}
 #um-pk{grid-template-columns:repeat(3,1fr)}
 @media (max-width:980px){#um-pk{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}}
+@media (min-width:761px){
+ .lm.eiffel{left:6%;width:8.5%}.lm.kingdom{left:17%;width:6.5%}.lm.opera{left:26%;width:27%}.lm.watarun{left:55%;width:9.5%}.lm.qatar{left:66%;width:15%}.lm.suitcase{left:84%;width:6.5%}
+ .float.pp{right:2%;left:auto;top:4%;width:9%}.float.b1{left:72%}
+}
