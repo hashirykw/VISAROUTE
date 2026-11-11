@@ -28,7 +28,6 @@ const flag=c=>`<img class="flag" src="images/flags/${c.cc}.svg" alt="" width="22
 const IMG=s=>`images/${s}.webp`,SM=s=>`images/sm/${s}.webp`;
 const WA="920000000000";
 const pad=n=>String(n).padStart(2,"0");
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("on"),4200)}
 
 /* ===== ICONS (inline SVG) ===== */
 const ICO={
@@ -66,38 +65,45 @@ const fillIcons=(r=document)=>{$$("i[data-ic]",r).forEach(i=>{if(!i.firstChild)i
 /* rolling-label buttons: wrap each text node once */
 const wrapBtns=(r=document)=>$$(".btn:not([data-w])",r).forEach(b=>{b.dataset.w=1;[...b.childNodes].forEach(n=>{if(n.nodeType===3&&n.textContent.trim()){const t=n.textContent.trim(),s=document.createElement("span");s.className="b-t";s.innerHTML=`<span data-t="${t.replace(/"/g,"&quot;")}">${t}</span>`;b.replaceChild(s,n)}})});
 
-/* ===== SOUND (Web Audio, soft & short; off until first tap) ===== */
-const SFX=(()=>{let ctx,out,armed=false,last=0,on=true;try{on=localStorage.getItem("vr-sfx")!=="0"}catch(e){}
+/* ===== SOUND KIT (Web Audio: marimba, wood and air tones through a small room reverb; off until first tap) ===== */
+const SFX=(()=>{let ctx,bus,dry,wet,armed=false,on=true;try{on=localStorage.getItem("vr-sfx")!=="0"}catch(e){}
  const ac=()=>{if(!ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;ctx=new A();
-   const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=5200;const cp=ctx.createDynamicsCompressor();cp.threshold.value=-24;out=ctx.createGain();out.gain.value=.9;out.connect(lp).connect(cp).connect(ctx.destination)}
+   const lp=ctx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=7500;const cp=ctx.createDynamicsCompressor();cp.threshold.value=-20;cp.ratio.value=3;
+   bus=ctx.createGain();bus.gain.value=.85;dry=ctx.createGain();wet=ctx.createGain();wet.gain.value=.22;
+   /* generated room impulse: 1.1s decaying stereo noise */
+   const len=Math.floor(ctx.sampleRate*1.1),ir=ctx.createBuffer(2,len,ctx.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2)}
+   const cv=ctx.createConvolver();cv.buffer=ir;bus.connect(dry).connect(lp);bus.connect(cv).connect(wet).connect(lp);lp.connect(cp).connect(ctx.destination)}
   if(ctx.state==="suspended")ctx.resume();return ctx};
- const note=(f,dur,vol,{type="sine",delay=0,to=f,att=.004}={})=>{const c=ac();if(!c)return;const t=c.currentTime+delay,o=c.createOscillator(),g=c.createGain();
-  o.type=type;o.frequency.setValueAtTime(f,t);if(to!==f)o.frequency.exponentialRampToValueAtTime(to,t+dur);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(out);o.start(t);o.stop(t+dur+.05)};
- const bell=(f,dur,vol,delay=0)=>{note(f,dur,vol,{delay});note(f*2.01,dur*.5,vol*.25,{delay});note(f*3.02,dur*.25,vol*.08,{delay})};
- const noise=(dur,vol,f1,f2,q=.9,delay=0)=>{const c=ac();if(!c)return;const t=c.currentTime+delay,n=Math.ceil(c.sampleRate*dur),b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
-  const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=b;f.type="bandpass";f.Q.value=q;f.frequency.setValueAtTime(f1,t);f.frequency.exponentialRampToValueAtTime(f2,t+dur);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+dur*.3);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f).connect(g).connect(out);s.start(t)};
+ const env=(g,t,a,v,d)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+d)};
+ /* marimba-like bar: fundamental + 4x and 9.2x partials that die fast */
+ const bar=(f,v,delay=0,dec=.9,pan=0)=>{const c=ac();if(!c)return;const t=c.currentTime+delay,p=c.createStereoPanner?c.createStereoPanner():null;
+  [[1,1,dec],[4,.32,dec*.18],[9.2,.08,dec*.06]].forEach(([m,a,d])=>{const o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=f*m;env(g,t,.002,v*a,d);o.connect(g);p?g.connect(p):g.connect(bus);o.start(t);o.stop(t+d+.1)});
+  if(p){p.pan.value=pan;p.connect(bus)}};
+ /* filtered noise: air, paper, wood transients */
+ const air=(dur,v,f1,f2,type="bandpass",q=.8,delay=0)=>{const c=ac();if(!c)return;const t=c.currentTime+delay,n=Math.ceil(c.sampleRate*dur),b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+  const s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=b;f.type=type;f.Q.value=q;f.frequency.setValueAtTime(f1,t);f.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+dur*.25);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f).connect(g).connect(bus);s.start(t)};
+ const wood=(f,v,delay=0)=>{const c=ac();if(!c)return;const t=c.currentTime+delay,o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.setValueAtTime(f*1.6,t);o.frequency.exponentialRampToValueAtTime(f,t+.03);env(g,t,.001,v,.07);o.connect(g).connect(bus);o.start(t);o.stop(t+.12);air(.018,v*.35,3200,2400,"bandpass",1.4,delay)};
  const ok=()=>on&&armed;
  return{get on(){return on},set(v){on=v;try{localStorage.setItem("vr-sfx",v?"1":"0")}catch(e){}},arm(){if(!armed){armed=true;if(on)ac()}},
-  hover(){if(!ok())return;const n=performance.now();if(n-last<90)return;last=n;note(2400,.035,.006,{to:2100})},
-  click(){if(!ok())return;note(320,.07,.05,{type:"triangle",to:190});noise(.025,.012,2600,1800,2)},
-  open(){if(!ok())return;bell(659,.7,.022);bell(988,.9,.018,.09);noise(.35,.01,400,1800)},
-  close(){if(!ok())return;bell(988,.35,.014);bell(659,.5,.012,.07)},
-  swap(){if(ok())noise(.2,.016,900,2600,.7)},
-  tick(){if(ok())note(1800,.03,.008,{type:"triangle"})},
-  msg(){if(ok()){bell(1175,.45,.016);bell(1568,.5,.012,.08)}},
-  success(){if(ok())[523,659,784,1047].forEach((f,i)=>bell(f,.8,.016,i*.08))}}})();
+  hover(){},                                   /* no hover sounds: quieter, less "default" */
+  click(){if(ok())wood(420,.09)},              /* soft wooden tap */
+  open(){if(ok()){air(.32,.05,500,2600,"bandpass",.7);bar(1318.5,.05,.04,.8,-.2);bar(1975.5,.04,.11,.9,.2)}},   /* airy swell + two glass notes */
+  close(){if(ok()){air(.22,.035,2200,600,"bandpass",.7);bar(1318.5,.035,.02,.5)}},
+  swap(){if(ok())air(.16,.045,1400,4200,"highpass",.6)},      /* paper flick */
+  tick(){if(ok())wood(900,.025)},
+  msg(){if(ok()){bar(1046.5,.05,0,.7,-.15);bar(1568,.04,.09,.8,.15)}},
+  success(){if(ok())[523.25,659.25,783.99,1046.5].forEach((f,i)=>bar(f,.045,i*.085,1.1,(i-1.5)*.2))},
+  error(){if(ok()){bar(220,.07,0,.4);bar(207.65,.06,.12,.5)}}}})();
 ["pointerdown","keydown"].forEach(e=>addEventListener(e,()=>SFX.arm(),{once:true,passive:true}));
-const SND="a.btn,button.btn,.chip,.menu>li>a,.menu>li>button,.dd a,.rail-nav button,.icon-btn,.cb-q button,.seg label,.cb-btn,.wa,.tabs button,.tcard,.vcard,.gcard,.pkg-list a";
-document.addEventListener("pointerover",e=>{const t=e.target.closest(SND);if(t&&!t.contains(e.relatedTarget))SFX.hover()});
-document.addEventListener("click",e=>{if(e.target.closest("a.btn,button.btn,.chip,.icon-btn:not(#sfxBtn),.cb-q button,.seg label,.rail-nav button,.dd a,.menu>li>button"))SFX.click()});
+document.addEventListener("click",e=>{if(e.target.closest("a.btn,button.btn,.chip,.icon-btn:not(#sfxBtn),.cb-q button,.seg label,.dd a,.menu>li>button,.cs-opt"))SFX.click()});
 
+/* (notifications, validation and dropdowns: see THEMED blocks below) */
 /* ===== LAZY PHOTOS ===== */
 const loadImg=el=>{const src=el.dataset.src,i=new Image();i.decoding="async";i.onload=()=>{el.style.setProperty("--bgi",`url("${src}")`);el.classList.add("has")};i.src=src};
 const lio="IntersectionObserver"in window?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){lio.unobserve(e.target);loadImg(e.target)}}),{rootMargin:"600px 600px"}):null;
 const hyd=()=>$$("[data-src]:not([data-tried])").forEach(el=>{el.dataset.tried=1;lio?lio.observe(el):loadImg(el)});
-new MutationObserver(()=>{hyd();fillIcons();wrapBtns()}).observe(document.documentElement,{childList:true,subtree:true});
+new MutationObserver(()=>{hyd();fillIcons();wrapBtns();window.enhanceSelects&&enhanceSelects();window.noVal&&noVal()}).observe(document.documentElement,{childList:true,subtree:true});
 
 
 
@@ -157,10 +163,64 @@ $("#ftr").outerHTML=`<footer><div class="wrap">
 </div>
 <div class="nxb"> <a class="nxb__id" href="https://nexlyr.solutions/" target="_blank" rel="noopener" aria-label="Nexlyr Solutions — the studio that designed and built this site"> <span class="nxb__mk" aria-hidden="true"><svg viewBox="0 0 631 1011" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" role="img" aria-label="Nexlyr Solutions logo"><defs><linearGradient id="nxbLogoG" gradientUnits="userSpaceOnUse" x1="277.4" y1="43.9" x2="724.3" y2="114.7"><stop offset="0" stop-color="#01C2F4"/><stop offset="1" stop-color="#0169B3"/></linearGradient></defs><g fill="url(#nxbLogoG)"><rect x="2.5" y="1" width="27.2" height="6.8"/><rect x="70.5" y="1" width="27.2" height="6.8"/><rect x="124.9" y="1" width="88.4" height="6.8"/><rect x="233.7" y="1" width="27.2" height="6.8"/><rect x="294.9" y="1" width="27.2" height="6.8"/><rect x="342.5" y="1" width="27.2" height="6.8"/><rect x="430.9" y="1" width="27.2" height="6.8"/><rect x="492.1" y="1" width="27.2" height="6.8"/><rect x="539.7" y="1" width="74.8" height="6.8"/><rect x="2.5" y="7.8" width="34" height="6.8"/><rect x="70.5" y="7.8" width="27.2" height="6.8"/><rect x="124.9" y="7.8" width="88.4" height="6.8"/><rect x="233.7" y="7.8" width="27.2" height="6.8"/><rect x="294.9" y="7.8" width="27.2" height="6.8"/><rect x="342.5" y="7.8" width="27.2" height="6.8"/><rect x="430.9" y="7.8" width="27.2" height="6.8"/><rect x="492.1" y="7.8" width="27.2" height="6.8"/><rect x="539.7" y="7.8" width="81.6" height="6.8"/><rect x="2.5" y="14.6" width="34" height="6.8"/><rect x="70.5" y="14.6" width="27.2" height="6.8"/><rect x="124.9" y="14.6" width="27.2" height="6.8"/><rect x="233.7" y="14.6" width="34" height="6.8"/><rect x="288.1" y="14.6" width="34" height="6.8"/><rect x="342.5" y="14.6" width="27.2" height="6.8"/><rect x="430.9" y="14.6" width="27.2" height="6.8"/><rect x="492.1" y="14.6" width="27.2" height="6.8"/><rect x="539.7" y="14.6" width="27.2" height="6.8"/><rect x="600.9" y="14.6" width="27.2" height="6.8"/><rect x="2.5" y="21.4" width="40.8" height="6.8"/><rect x="70.5" y="21.4" width="27.2" height="6.8"/><rect x="124.9" y="21.4" width="27.2" height="6.8"/><rect x="240.5" y="21.4" width="34" height="6.8"/><rect x="281.3" y="21.4" width="34" height="6.8"/><rect x="342.5" y="21.4" width="27.2" height="6.8"/><rect x="430.9" y="21.4" width="27.2" height="6.8"/><rect x="492.1" y="21.4" width="27.2" height="6.8"/><rect x="539.7" y="21.4" width="27.2" height="6.8"/><rect x="600.9" y="21.4" width="27.2" height="6.8"/><rect x="2.5" y="28.2" width="47.6" height="6.8"/><rect x="70.5" y="28.2" width="27.2" height="6.8"/><rect x="124.9" y="28.2" width="27.2" height="6.8"/><rect x="247.3" y="28.2" width="61.2" height="6.8"/><rect x="342.5" y="28.2" width="27.2" height="6.8"/><rect x="437.7" y="28.2" width="27.2" height="6.8"/><rect x="485.3" y="28.2" width="27.2" height="6.8"/><rect x="539.7" y="28.2" width="27.2" height="6.8"/><rect x="600.9" y="28.2" width="27.2" height="6.8"/><rect x="2.5" y="35" width="54.4" height="6.8"/><rect x="70.5" y="35" width="27.2" height="6.8"/><rect x="124.9" y="35" width="27.2" height="6.8"/><rect x="254.1" y="35" width="47.6" height="6.8"/><rect x="342.5" y="35" width="27.2" height="6.8"/><rect x="444.5" y="35" width="27.2" height="6.8"/><rect x="478.5" y="35" width="27.2" height="6.8"/><rect x="539.7" y="35" width="27.2" height="6.8"/><rect x="600.9" y="35" width="27.2" height="6.8"/><rect x="2.5" y="41.8" width="27.2" height="6.8"/><rect x="36.5" y="41.8" width="27.2" height="6.8"/><rect x="70.5" y="41.8" width="27.2" height="6.8"/><rect x="124.9" y="41.8" width="81.6" height="6.8"/><rect x="260.9" y="41.8" width="34" height="6.8"/><rect x="342.5" y="41.8" width="27.2" height="6.8"/><rect x="451.3" y="41.8" width="47.6" height="6.8"/><rect x="539.7" y="41.8" width="27.2" height="6.8"/><rect x="600.9" y="41.8" width="27.2" height="6.8"/><rect x="2.5" y="48.6" width="27.2" height="6.8"/><rect x="36.5" y="48.6" width="27.2" height="6.8"/><rect x="70.5" y="48.6" width="27.2" height="6.8"/><rect x="124.9" y="48.6" width="81.6" height="6.8"/><rect x="260.9" y="48.6" width="34" height="6.8"/><rect x="342.5" y="48.6" width="27.2" height="6.8"/><rect x="458.1" y="48.6" width="34" height="6.8"/><rect x="539.7" y="48.6" width="27.2" height="6.8"/><rect x="600.9" y="48.6" width="27.2" height="6.8"/><rect x="2.5" y="55.4" width="27.2" height="6.8"/><rect x="43.3" y="55.4" width="54.4" height="6.8"/><rect x="124.9" y="55.4" width="27.2" height="6.8"/><rect x="254.1" y="55.4" width="47.6" height="6.8"/><rect x="342.5" y="55.4" width="27.2" height="6.8"/><rect x="464.9" y="55.4" width="27.2" height="6.8"/><rect x="539.7" y="55.4" width="81.6" height="6.8"/><rect x="2.5" y="62.2" width="27.2" height="6.8"/><rect x="43.3" y="62.2" width="54.4" height="6.8"/><rect x="124.9" y="62.2" width="27.2" height="6.8"/><rect x="247.3" y="62.2" width="61.2" height="6.8"/><rect x="342.5" y="62.2" width="27.2" height="6.8"/><rect x="464.9" y="62.2" width="27.2" height="6.8"/><rect x="539.7" y="62.2" width="74.8" height="6.8"/><rect x="2.5" y="69" width="27.2" height="6.8"/><rect x="50.1" y="69" width="47.6" height="6.8"/><rect x="124.9" y="69" width="27.2" height="6.8"/><rect x="240.5" y="69" width="34" height="6.8"/><rect x="281.3" y="69" width="34" height="6.8"/><rect x="342.5" y="69" width="27.2" height="6.8"/><rect x="464.9" y="69" width="27.2" height="6.8"/><rect x="539.7" y="69" width="27.2" height="6.8"/><rect x="580.5" y="69" width="34" height="6.8"/><rect x="2.5" y="75.8" width="27.2" height="6.8"/><rect x="56.9" y="75.8" width="40.8" height="6.8"/><rect x="124.9" y="75.8" width="27.2" height="6.8"/><rect x="233.7" y="75.8" width="34" height="6.8"/><rect x="288.1" y="75.8" width="34" height="6.8"/><rect x="342.5" y="75.8" width="27.2" height="6.8"/><rect x="464.9" y="75.8" width="27.2" height="6.8"/><rect x="539.7" y="75.8" width="27.2" height="6.8"/><rect x="587.3" y="75.8" width="34" height="6.8"/><rect x="2.5" y="82.6" width="27.2" height="6.8"/><rect x="63.7" y="82.6" width="34" height="6.8"/><rect x="124.9" y="82.6" width="88.4" height="6.8"/><rect x="233.7" y="82.6" width="27.2" height="6.8"/><rect x="294.9" y="82.6" width="27.2" height="6.8"/><rect x="342.5" y="82.6" width="88.4" height="6.8"/><rect x="464.9" y="82.6" width="27.2" height="6.8"/><rect x="539.7" y="82.6" width="27.2" height="6.8"/><rect x="594.1" y="82.6" width="34" height="6.8"/><rect x="2.5" y="89.4" width="27.2" height="6.8"/><rect x="70.5" y="89.4" width="27.2" height="6.8"/><rect x="124.9" y="89.4" width="88.4" height="6.8"/><rect x="233.7" y="89.4" width="27.2" height="6.8"/><rect x="294.9" y="89.4" width="27.2" height="6.8"/><rect x="342.5" y="89.4" width="88.4" height="6.8"/><rect x="464.9" y="89.4" width="27.2" height="6.8"/><rect x="539.7" y="89.4" width="27.2" height="6.8"/><rect x="600.9" y="89.4" width="27.2" height="6.8"/><rect x="0" y="128" width="98.5" height="883"/><rect x="133.25" y="128" width="98.5" height="883"/><rect x="266.5" y="128" width="98.5" height="883"/><rect x="399.75" y="128" width="98.5" height="630"/><rect x="533" y="128" width="98.5" height="630"/></g></svg></span> <span class="nxb__tx"><span class="nxb__kk">Designed &amp; built by</span><span class="nxb__nm">Nexlyr Solutions</span></span> </a> <a class="nxb__go" target="_blank" rel="noopener" href="https://wa.me/923053687680?text=Hi%20Nexlyr%21%20I%20saw%20VisaRoute%27s%20website%20and%20I%27d%20like%20a%20site%20like%20it." aria-label="Connect with Nexlyr Solutions on WhatsApp"> <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.14 6.44 2.14 11.9c0 1.75.46 3.45 1.32 4.95L2.05 22l5.28-1.38a9.86 9.86 0 0 0 4.71 1.2c5.46 0 9.9-4.44 9.9-9.9S17.5 2 12.04 2zm5.8 14.06c-.24.68-1.4 1.3-1.94 1.35-.5.05-1.13.07-1.82-.11-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.8-4.17-4.95-4.37-.14-.2-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.58-.36.77-.36l.55.01c.18.01.42-.07.65.5.24.58.82 2 .89 2.14.07.15.12.32.02.51-.09.2-.14.32-.28.49l-.42.49c-.14.14-.28.29-.12.57.16.29.72 1.18 1.54 1.91 1.06.94 1.95 1.23 2.23 1.37.28.15.44.12.6-.07.17-.2.7-.81.88-1.09.19-.29.37-.24.63-.14.25.09 1.62.76 1.9.9.28.15.46.22.53.34.07.12.07.68-.17 1.34z"/></svg> Connect </a> </div>
 <div class="copy"><span>© 2026 VisaRoute</span><span>Privacy · Terms · Refund policy</span></div></div></footer>
-<div class="dock"><a class="wa" href="https://wa.me/${WA}" target="_blank" rel="noopener" aria-label="WhatsApp us">${ic("chat")}</a></div><div id="toast" role="status"></div>`;
+<div class="dock"><a class="wa" href="https://wa.me/${WA}" target="_blank" rel="noopener" aria-label="WhatsApp us">${ic("chat")}</a></div><div id="toasts" aria-live="polite"></div>`;
 const PHI={dests:"singapore",tours:"maldives-honeymoon",umrah:"umrah-premium",services:"world-tour",blog:"best-time-turkey",about:"about",contact:"contact",faq:"first-trip-dubai",how:"schengen-mistakes",track:"uk",apply:"uae"};
 {const ph=$(".ph");if(ph&&PHI[pg])ph.dataset.src=IMG(PHI[pg])}
 
+/* ===== THEMED NOTIFICATIONS ===== */
+function toast(m,type="ok",title){const box=$("#toasts");if(!box)return;const T={ok:["Done","check"],info:["Note","chat"],err:["Check the form","x"]}[type]||["Done","check"];
+ const el=document.createElement("div");el.className="ntf "+type;el.setAttribute("role",type==="err"?"alert":"status");
+ el.innerHTML=`<span class="ntf-ic">${ic(T[1])}</span><div class="ntf-tx"><b>${title||T[0]}</b><p></p></div><button type="button" class="ntf-x" aria-label="Dismiss">${ic("x")}</button><i class="ntf-bar"></i>`;
+ $("p",el).textContent=m;box.appendChild(el);while(box.children.length>3)box.firstChild.remove();
+ const kill=()=>{if(el._k)return;el._k=1;el.classList.add("out");setTimeout(()=>el.remove(),500)};$(".ntf-x",el).onclick=kill;
+ let t=setTimeout(kill,5200);el.onmouseenter=()=>{clearTimeout(t);el.classList.add("hold")};el.onmouseleave=()=>{el.classList.remove("hold");t=setTimeout(kill,2200)};
+ type==="err"?SFX.error():type==="ok"&&SFX.msg()}
+
+/* ===== THEMED FORM VALIDATION (replaces browser bubbles) ===== */
+const vMsg=el=>el.validity.valueMissing?(el.type==="checkbox"?"Please tick this box":el.tagName==="SELECT"?"Please choose an option":el.type==="file"?"Please attach a file":"Please fill this in")
+ :el.validity.typeMismatch?(el.type==="email"?"Enter a valid email address":"Check this value"):el.validity.rangeUnderflow||el.validity.rangeOverflow?"Value is out of range":"Check this field";
+function clearBad(el){const b=el.closest(".bad");if(b){b.classList.remove("bad");b.querySelector(".f-err")?.remove()}}
+document.addEventListener("submit",e=>{const f=e.target;if(!(f instanceof HTMLFormElement)||f.checkValidity())return;e.preventDefault();e.stopImmediatePropagation();
+ let first=null;[...f.elements].forEach(el=>{if(!el.willValidate||el.checkValidity())return;const b=el.closest(".cs")?el.closest(".cs").parentElement:(el.type==="checkbox"?el.closest("label"):el.parentElement);
+  if(!b.classList.contains("bad")){b.classList.add("bad");b.insertAdjacentHTML("beforeend",`<small class="f-err">${vMsg(el)}</small>`)}first=first||el});
+ if(first){const tgt=first.closest(".cs")?$(".cs-btn",first.closest(".cs")):first;(window.lenis?lenis.scrollTo(tgt,{offset:-140,duration:.9}):tgt.scrollIntoView({block:"center",behavior:"smooth"}));setTimeout(()=>tgt.focus({preventScroll:true}),350)}
+ toast("Please complete the highlighted fields.","err")},true);
+["input","change"].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest(".bad")&&e.target.checkValidity&&e.target.checkValidity())clearBad(e.target)},true));
+const noVal=()=>$$("form:not([novalidate])").forEach(f=>f.noValidate=true);
+
+/* ===== THEMED DROPDOWNS (custom listbox over the native select) ===== */
+let csN=0;
+function enhanceSelects(r=document){$$("select:not([data-cs]):not([multiple])",r).forEach(sel=>{
+ sel.dataset.cs=1;const id="cs"+(++csN),w=document.createElement("div");w.className="cs";sel.parentNode.insertBefore(w,sel);w.appendChild(sel);
+ sel.tabIndex=-1;sel.setAttribute("aria-hidden","true");sel.classList.add("cs-native");
+ const lbl=sel.id&&document.querySelector(`label[for="${sel.id}"]`);
+ w.insertAdjacentHTML("beforeend",`<button type="button" class="cs-btn" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}"${lbl?` aria-label="${lbl.textContent.trim()}"`:""}><span class="cs-val"></span><span class="cs-chev">${ic("chev")}</span></button><ul class="cs-list" id="${id}" role="listbox" tabindex="-1" data-lenis-prevent></ul>`);
+ if(lbl)lbl.onclick=e=>{e.preventDefault();btn.focus()};
+ const btn=$(".cs-btn",w),list=$(".cs-list",w),val=$(".cs-val",w);let act=-1,typed="",tt;
+ const opts=()=>[...sel.options];
+ const render=()=>{let h="";[...sel.children].forEach(n=>{if(n.tagName==="OPTGROUP"){h+=`<li class="cs-grp" role="presentation">${n.label}</li>`;[...n.children].forEach(o=>h+=item(o))}else h+=item(n)});list.innerHTML=h;sync()};
+ const item=o=>`<li class="cs-opt" role="option" id="${id}-${o.index}" data-i="${o.index}" aria-selected="${o.selected}"${o.disabled?' aria-disabled="true"':""}><span>${o.textContent}</span>${ic("check")}</li>`;
+ const sync=()=>{const o=sel.options[sel.selectedIndex];val.textContent=o?o.textContent:"";$$(".cs-opt",list).forEach(li=>li.setAttribute("aria-selected",+li.dataset.i===sel.selectedIndex))};
+ const hi=i=>{const L=$$(".cs-opt",list);if(!L.length)return;act=Math.max(0,Math.min(opts().length-1,i));L.forEach(li=>li.classList.toggle("act",+li.dataset.i===act));const a=L.find(li=>+li.dataset.i===act);if(a){btn.setAttribute("aria-activedescendant",a.id);const lt=list.scrollTop,lh=list.clientHeight;if(a.offsetTop<lt)list.scrollTop=a.offsetTop-6;else if(a.offsetTop+a.offsetHeight>lt+lh)list.scrollTop=a.offsetTop+a.offsetHeight-lh+6}};
+ const open=()=>{if(w.classList.contains("open"))return;$$(".cs.open").forEach(x=>x._close&&x._close());const r=btn.getBoundingClientRect(),below=innerHeight-r.bottom;w.classList.toggle("up",below<300&&r.top>below);w.classList.add("open");btn.setAttribute("aria-expanded","true");hi(sel.selectedIndex);SFX.open()};
+ const close=(snd=true)=>{if(!w.classList.contains("open"))return;w.classList.remove("open");btn.setAttribute("aria-expanded","false");btn.removeAttribute("aria-activedescendant");if(snd)SFX.close()};w._close=()=>close(false);
+ const pick=i=>{if(sel.options[i]?.disabled)return;const ch=sel.selectedIndex!==i;sel.selectedIndex=i;sync();close(false);btn.focus();SFX.click();if(ch){sel.dispatchEvent(new Event("input",{bubbles:true}));sel.dispatchEvent(new Event("change",{bubbles:true}))}};
+ btn.onclick=()=>w.classList.contains("open")?close():open();
+ list.onclick=e=>{const li=e.target.closest(".cs-opt");if(li)pick(+li.dataset.i)};
+ list.onpointermove=e=>{const li=e.target.closest(".cs-opt");if(li&&+li.dataset.i!==act)hi(+li.dataset.i)};
+ btn.onkeydown=e=>{const o=w.classList.contains("open"),k=e.key;
+  if(k==="ArrowDown"||k==="ArrowUp"){e.preventDefault();if(!o)open();else hi(act+(k==="ArrowDown"?1:-1))}
+  else if(k==="Home"&&o){e.preventDefault();hi(0)}else if(k==="End"&&o){e.preventDefault();hi(opts().length-1)}
+  else if((k==="Enter"||k===" ")&&o){e.preventDefault();pick(act)}else if(k==="Escape"&&o){e.preventDefault();e.stopPropagation();close()}else if(k==="Tab"&&o)close(false)
+  else if(k.length===1&&/\S/.test(k)){typed+=k.toLowerCase();clearTimeout(tt);tt=setTimeout(()=>typed="",600);const f=opts().findIndex(x=>x.textContent.trim().toLowerCase().startsWith(typed));if(f>=0){o?hi(f):pick(f)}}};
+ /* keep in sync when code sets .value / .selectedIndex or rewrites the options */
+ ["value","selectedIndex"].forEach(p=>{const d=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,p);Object.defineProperty(sel,p,{configurable:true,get(){return d.get.call(sel)},set(v){d.set.call(sel,v);sync()}})});
+ new MutationObserver(render).observe(sel,{childList:true,subtree:true});sel.addEventListener("change",sync);
+ sel.form&&sel.form.addEventListener("reset",()=>setTimeout(sync));render()})}
+document.addEventListener("pointerdown",e=>{$$(".cs.open").forEach(w=>{if(!w.contains(e.target))w._close()})});
+addEventListener("resize",()=>$$(".cs.open").forEach(w=>w._close()));
+
+window.enhanceSelects=enhanceSelects;window.noVal=noVal;
 /* dropdowns: hover on desktop, click anywhere, Esc closes */
 {const items=$$(".has-dd");let ht;
  const set=(li,o)=>{items.forEach(x=>{const on=x===li&&o;x.classList.toggle("open",on);$("button",x).setAttribute("aria-expanded",on)});if(o)SFX.swap()};
@@ -171,12 +231,14 @@ const PHI={dests:"singapore",tours:"maldives-honeymoon",umrah:"umrah-premium",se
  document.addEventListener("keydown",e=>{if(e.key==="Escape")items.forEach(x=>{if(x.classList.contains("open")){set(x,false);$("button",x).focus()}})})}
 /* mobile menu */
 const mnav=$("#mnav"),mbtn=$("#mbtn");
-const menuSet=o=>{mnav.classList.toggle("open",o);mbtn.setAttribute("aria-expanded",o);mbtn.innerHTML=ic(o?"x":"menu");document.documentElement.style.overflow=o?"hidden":"";window.lenis&&(o?lenis.stop():lenis.start());o?SFX.open():SFX.close()};
+const menuSet=o=>{mnav._y=scrollY;mnav.classList.toggle("open",o);mbtn.setAttribute("aria-expanded",o);mbtn.innerHTML=ic(o?"x":"menu");o?SFX.open():SFX.close()};
 mbtn.onclick=()=>menuSet(!mnav.classList.contains("open"));
 $$("li>button",mnav).forEach(b=>b.onclick=()=>{b.parentElement.classList.toggle("open");SFX.swap()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&mnav.classList.contains("open")){menuSet(false);mbtn.focus()}});
+document.addEventListener("pointerdown",e=>{if(mnav.classList.contains("open")&&!mnav.contains(e.target)&&!mbtn.contains(e.target))menuSet(false)});
+addEventListener("scroll",()=>{if(mnav.classList.contains("open")&&Math.abs(scrollY-(mnav._y??scrollY))>160)menuSet(false)},{passive:true});
 $("#sfxBtn").onclick=()=>{SFX.set(!SFX.on);$("#sfxBtn").setAttribute("aria-pressed",SFX.on);SFX.arm();SFX.click()};
-$("#nl").onsubmit=e=>{e.preventDefault();e.target.reset();SFX.success();toast("Subscribed. (Demo: connect your email service.)")};
+$("#nl").onsubmit=e=>{e.preventDefault();e.target.reset();SFX.success();toast("You will get visa updates and offers once a month. (Demo: connect your email service.)","ok","Subscribed")};
 
 /* ===== SMOOTH SCROLL (Lenis) ===== */
 if(window.Lenis&&!RM){window.lenis=new Lenis({lerp:.075,wheelMultiplier:.9,smoothWheel:true,syncTouch:false});const raf=t=>{lenis.raf(t);requestAnimationFrame(raf)};requestAnimationFrame(raf)}
@@ -240,7 +302,7 @@ track(){
  $("#t-form").onsubmit=e=>{e.preventDefault();go($("#t-ref").value.trim().toUpperCase())};
  if(Q.get("ref")){$("#t-ref").value=Q.get("ref");go(Q.get("ref"))}
 },
-contact(){$("#c-form").onsubmit=e=>{e.preventDefault();e.target.reset();SFX.success();toast("Message sent. We will reply within the hour. (Demo: connect your backend.)")}}
+contact(){$("#c-form").onsubmit=e=>{e.preventDefault();e.target.reset();SFX.success();toast("We will reply within the hour. (Demo: connect your backend.)","ok","Message sent")}}
 };
 
 const chipsFor=(list,key,get)=>{let r="All",q="";const rs=["All",...new Set(list.map(x=>x[key]))];
@@ -264,7 +326,7 @@ tour(){
  $("#tr-more").innerHTML=TOURS.map((x,j)=>[x,j]).filter(([,j])=>j!==i).slice(0,3).map(([x,j])=>tcard(x,j)).join("");
  $("#tr-form").onsubmit=e=>{e.preventDefault();
   /* ===== TOUR BOOKING INTEGRATION POINT: yahan form data apne backend/payment par bhejein ===== */
-  e.target.reset();SFX.success();toast("Enquiry sent. We will contact you within the hour. (Demo mode)")};
+  e.target.reset();SFX.success();toast("We will contact you within the hour. (Demo mode)","ok","Enquiry sent")};
 },
 blog(){$("#grid").innerHTML=ARTS.map(bcard).join("")},
 article(){
@@ -286,10 +348,10 @@ Object.assign(P,{umrah(){
  $("#um-pk").onclick=e=>{const a=e.target.closest("[data-pk]");if(a){sel(0);$("#u-pk").selectedIndex=+a.dataset.pk}};
  $("#t-form").onsubmit=e=>{e.preventDefault();
   /* ===== UMRAH TICKET INTEGRATION POINT: yahan flight enquiry apne backend/email par bhejein ===== */
-  e.target.reset();SFX.success();toast("Ticket enquiry sent. We will send fares within the hour. (Demo mode)")};
+  e.target.reset();SFX.success();toast("We will send fares within the hour. (Demo mode)","ok","Ticket enquiry sent")};
  $("#u-form").onsubmit=e=>{e.preventDefault();
   /* ===== UMRAH PACKAGE INTEGRATION POINT ===== */
-  e.target.reset();SFX.success();toast("Package enquiry sent. Our Umrah team will call you. (Demo mode)")};
+  e.target.reset();SFX.success();toast("Our Umrah team will call you shortly. (Demo mode)","ok","Package enquiry sent")};
 }});
 
 /* ===== HOME ===== */
@@ -341,8 +403,7 @@ function planForm(){
   const b=$("#p-b"),bo=$("#p-bo"),upd=()=>{bo.textContent="$"+(+b.value).toLocaleString("en-US")+(+b.value>=6000?"+":"");b.style.setProperty("--p",((b.value-b.min)/(b.max-b.min)*100)+"%")};b.oninput=()=>{upd();SFX.tick()};upd();
   $$("[data-step]",f).forEach(x=>x.onclick=()=>{const t=$("#p-t");t.value=Math.min(30,Math.max(1,(+t.value||1)+ +x.dataset.step));SFX.click()});
   $$("input[name=svc]",f).forEach(r=>r.onchange=()=>{if(r.value==="Umrah")$("#p-d").value="Umrah & Ziyarat Package";if(r.value==="Tour"&&D.some(c=>c.n===$("#p-d").value))$("#p-d").value=TOURS[0].n});
-  f.onsubmit=e=>{e.preventDefault();const req=[$("#p-n"),$("#p-p")];for(const r of req){if(!r.value.trim()){r.focus();r.reportValidity&&r.setCustomValidity("Please fill this in");r.reportValidity();r.oninput=()=>r.setCustomValidity("");return}}
-   const em=$("#p-e");if(em.value&&!em.checkValidity()){em.reportValidity();return}
+  f.onsubmit=e=>{e.preventDefault();const em=$("#p-e");
    const plan={service:$("input[name=svc]:checked",f).value,name:$("#p-n").value.trim(),phone:$("#p-p").value.trim(),email:em.value.trim(),destination:$("#p-d").value,month:$("#p-m").value,travellers:$("#p-t").value,budget:$("#p-bo").textContent,notes:$("#p-x").value.trim()};
    /* ===== TRIP PLAN INTEGRATION POINT: yahan "plan" object apne backend / Supabase / email par bhejein ===== */
    console.log("Trip plan:",plan);
@@ -458,7 +519,7 @@ P[pg]&&P[pg]();
  if(track){hyd();sizeHs()}f();
 })();
 
-fillIcons();wrapBtns();hyd();reveal();
+fillIcons();wrapBtns();hyd();enhanceSelects();noVal();reveal();
 document.fonts&&document.fonts.ready.then(()=>dispatchEvent(new Event("resize")));
 /* hide floating dock while the footer is on screen (small screens), so the credit bar stays clear */
 if("IntersectionObserver"in window){const io=new IntersectionObserver(es=>es.forEach(e=>document.documentElement.classList.toggle("ftr-in",e.isIntersecting)),{threshold:.15});const ft=$("footer");ft&&io.observe(ft)}
