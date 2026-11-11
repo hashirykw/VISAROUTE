@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://visaroute-beta.vercel.app/sitemap.xml
